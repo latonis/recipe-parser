@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -23,6 +24,9 @@ func main() {
 		fmt.Printf("[qty: %s, ingredient: %s, price: %s]\n", match[1], match[2], match[3])
 	}
 	fmt.Println()
+	http.HandleFunc("/hello", hello)
+	http.HandleFunc("/headers", headers)
+	http.ListenAndServe(":9000", nil)
 }
 
 func parse_page(url string) string {
@@ -86,4 +90,18 @@ func navigateLiElement(n *html.Node) string {
 		}
 	}
 	return str
+}
+
+func headers(w http.ResponseWriter, req *http.Request) {
+	for name, headers := range req.Header {
+		for _, h := range headers {
+			fmt.Fprintf(w, "%v: %v\n", name, h)
+		}
+	}
+
+	fmt.Fprintf(w, "%v", req.URL.Query())
+}
+
+func hello(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "hello\n")
 }
