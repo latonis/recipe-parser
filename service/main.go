@@ -151,7 +151,8 @@ func headers(w http.ResponseWriter, req *http.Request) {
 
 	title := strings.Title(strings.ReplaceAll(u.Path[1:len(u.Path)-1], "-", " "))
 	if param != "" {
-		r := regexp.MustCompile("(\\d+[\\.\\/]*\\d* [a-zA-Z.]*|\\d+)? ([A-Za-z\\d-(),'*. ]+) \\(([\\$0-9.]+)\\)")
+		// https://regex101.com/r/fmAmVD/1
+		r := regexp.MustCompile("(\\d+[\\.\\/]*\\d* [a-zA-Z.]*|\\d+)? ([\\x{2150}-\\x{215E}\\x{00BC}-\\x{00BE}A-Za-z\\d-()/,'*. ]+) \\(([\\$0-9.]+)\\)")
 		testing := parse_page(param)
 		fmt.Print("recipe incoming!\n\n")
 
