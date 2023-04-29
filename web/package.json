@@ -1,0 +1,16 @@
+{
+    "name": "nodejs-recipe-wen",
+    "version": "1.0.0",
+    "description": "Landing page to submit recipes",
+    "author": "Jacob Latonis",
+    "license": "MIT",
+    "main": "app.js",
+    "keywords": [
+      "nodejs",
+      "bootstrap",
+      "express"
+    ],
+    "dependencies": {
+      "express": "^4.18"
+    }
+  }

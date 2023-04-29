@@ -143,10 +143,7 @@ func navigateLiElement(n *html.Node) string {
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
-
-	// fmt.Fprintf(w, "%v\n", req.URL.Query().Get("url"))
 	param := req.URL.Query().Get("url")
-	fmt.Fprintf(w, "%v\n", param)
 	u, err := url.Parse(param)
 	if err != nil {
 		fmt.Println("[!!] Error: Parsing URL failed", err)
@@ -211,7 +208,7 @@ func headers(w http.ResponseWriter, req *http.Request) {
 
 		_, err = srv.Spreadsheets.BatchUpdate(spreadsheetId, rbb).Context(ctx).Do()
 		if err != nil {
-			fmt.Printf("Sheet with title {%s} already exists!\n", title)
+			fmt.Printf("[!] Sheet with title {%s} already exists!\n", title)
 		}
 
 		writeRange := title + "!A1"
