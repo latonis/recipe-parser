@@ -144,13 +144,15 @@ func navigateLiElement(n *html.Node) string {
 
 func headers(w http.ResponseWriter, req *http.Request) {
 	param := req.URL.Query().Get("url")
-	u, err := url.Parse(param)
-	if err != nil {
-		fmt.Println("[!!] Error: Parsing URL failed", err)
-	}
-
-	title := strings.Title(strings.ReplaceAll(u.Path[1:len(u.Path)-1], "-", " "))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if param != "" {
+		u, err := url.Parse(param)
+		if err != nil {
+			fmt.Println("[!!] Error: Parsing URL failed", err)
+		}
+		fmt.Println(u.Path)
+		title := strings.Title(strings.ReplaceAll(u.Path[1:len(u.Path)-1], "-", " "))
 		// https://regex101.com/r/fmAmVD/1
 		r := regexp.MustCompile("(\\d+[\\.\\/]*\\d* [a-zA-Z.]*|\\d+)? ([\\x{2150}-\\x{215E}\\x{00BC}-\\x{00BE}A-Za-z\\d-()/,'*. ]+) \\(([\\$0-9.]+)\\)")
 		testing := parse_page(param)
@@ -238,5 +240,6 @@ func headers(w http.ResponseWriter, req *http.Request) {
 				fmt.Println("[!!] Error: Unable to retrieve data from sheet", err)
 			}
 		}
+		w.Write([]byte("HTTP 202 - Recipe received and created!"))
 	}
 }
