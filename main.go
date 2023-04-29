@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -11,21 +10,7 @@ import (
 )
 
 func main() {
-	r := regexp.MustCompile("(\\d+[\\.\\/]*\\d* [a-zA-Z.]*|\\d+)? ([A-Za-z\\d-(),'*. ]+) \\(([\\$0-9.]+)\\)")
-	testing := parse_page("https://www.budgetbytes.com/peanut-tofu-noodle-bowls/")
-	fmt.Print("recipe incoming!\n\n")
-	matches := r.FindAllStringSubmatch(testing, -1)
-
-	for _, match := range matches {
-		// original match, qty, ingredient, price
-		if len(match) != 4 {
-			fmt.Println(fmt.Errorf("[!] line not parsed correctly. {%s}", strings.Join(match, "")))
-		}
-		fmt.Printf("[qty: %s, ingredient: %s, price: %s]\n", match[1], match[2], match[3])
-	}
-	fmt.Println()
-	http.HandleFunc("/hello", hello)
-	http.HandleFunc("/headers", headers)
+	http.HandleFunc("/recipe", headers)
 	http.ListenAndServe(":9000", nil)
 }
 
@@ -93,15 +78,24 @@ func navigateLiElement(n *html.Node) string {
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
-	for name, headers := range req.Header {
-		for _, h := range headers {
-			fmt.Fprintf(w, "%v: %v\n", name, h)
+
+	// fmt.Fprintf(w, "%v\n", req.URL.Query().Get("url"))
+	param := req.URL.Query().Get("url")
+	fmt.Fprintf(w, "%v\n", param)
+
+	if param != "" {
+		r := regexp.MustCompile("(\\d+[\\.\\/]*\\d* [a-zA-Z.]*|\\d+)? ([A-Za-z\\d-(),'*. ]+) \\(([\\$0-9.]+)\\)")
+		testing := parse_page(param)
+		fmt.Print("recipe incoming!\n\n")
+		matches := r.FindAllStringSubmatch(testing, -1)
+
+		for _, match := range matches {
+			// original match, qty, ingredient, price
+			if len(match) != 4 {
+				fmt.Println(fmt.Errorf("[!] line not parsed correctly. {%s}", strings.Join(match, "")))
+			}
+			fmt.Printf("[qty: %s, ingredient: %s, price: %s]\n", match[1], match[2], match[3])
 		}
+		fmt.Println()
 	}
-
-	fmt.Fprintf(w, "%v", req.URL.Query())
-}
-
-func hello(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "hello\n")
 }

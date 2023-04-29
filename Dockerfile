@@ -8,3 +8,4 @@ RUN go mod download
 COPY *.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-go-recipe
 CMD ["/docker-go-recipe"]
+EXPOSE 9000
