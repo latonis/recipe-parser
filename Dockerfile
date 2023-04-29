@@ -6,6 +6,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
+COPY *.json ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-go-recipe
 CMD ["/docker-go-recipe"]
 EXPOSE 9000
