@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -24,7 +24,6 @@ func main() {
 	http.ListenAndServe(":9000", nil)
 }
 
-
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) *http.Client {
 	// The file token.json stores the user's access and refresh tokens, and is
@@ -33,8 +32,8 @@ func getClient(config *oauth2.Config) *http.Client {
 	tokFile := "token.json"
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
-			tok = getTokenFromWeb(config)
-			saveToken(tokFile, tok)
+		tok = getTokenFromWeb(config)
+		saveToken(tokFile, tok)
 	}
 	return config.Client(context.Background(), tok)
 }
@@ -43,16 +42,16 @@ func getClient(config *oauth2.Config) *http.Client {
 func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("Go to the following link in your browser then type the "+
-			"authorization code: \n%v\n", authURL)
+		"authorization code: \n%v\n", authURL)
 
 	var authCode string
 	if _, err := fmt.Scan(&authCode); err != nil {
-			log.Fatalf("Unable to read authorization code: %v", err)
+		fmt.Println("[!!] Error: Unable to read authorization code", err)
 	}
 
 	tok, err := config.Exchange(context.TODO(), authCode)
 	if err != nil {
-			log.Fatalf("Unable to retrieve token from web: %v", err)
+		fmt.Println("[!!] Error: Unable to retrieve token from web", err)
 	}
 	return tok
 }
@@ -61,7 +60,7 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 func tokenFromFile(file string) (*oauth2.Token, error) {
 	f, err := os.Open(file)
 	if err != nil {
-			return nil, err
+		return nil, err
 	}
 	defer f.Close()
 	tok := &oauth2.Token{}
@@ -74,7 +73,7 @@ func saveToken(path string, token *oauth2.Token) {
 	fmt.Printf("Saving credential file to: %s\n", path)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-			log.Fatalf("Unable to cache oauth token: %v", err)
+		fmt.Println("[!!] Error: Unable to cache oauth token", err)
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
@@ -84,14 +83,14 @@ func parse_page(url string) string {
 	fmt.Printf("Getting url {%s} ... \n", url)
 	res, err := http.Get(url)
 	if err != nil {
-		fmt.Println("[!!] Error: ", err)
+		fmt.Println("[!!] Error: HTTP Get request failed", err)
 	}
 
 	defer res.Body.Close()
 
 	doc, err := html.Parse(res.Body)
 	if err != nil {
-		fmt.Println("[!!] Error: ", err)
+		fmt.Println("[!!] Error: Parsing HTML of website failed", err)
 	}
 
 	// var ingredients []string
@@ -150,7 +149,7 @@ func headers(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "%v\n", param)
 	u, err := url.Parse(param)
 	if err != nil {
-		fmt.Println("[!!] Error: ", err)
+		fmt.Println("[!!] Error: Parsing URL failed", err)
 	}
 
 	title := strings.Title(strings.ReplaceAll(u.Path[1:len(u.Path)-1], "-", " "))
@@ -162,28 +161,28 @@ func headers(w http.ResponseWriter, req *http.Request) {
 		ctx := context.Background()
 		b, err := os.ReadFile("credentials.json")
 		if err != nil {
-				log.Fatalf("Unable to read client secret file: %v", err)
+			fmt.Println("[!!] Error: Unable to read client secret file", err)
 		}
-	
+
 		// If modifying these scopes, delete your previously saved token.json.
 		config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/spreadsheets")
 		if err != nil {
-				log.Fatalf("Unable to parse client secret file to config: %v", err)
+			fmt.Println("[!!] Error: Unable to parse client secret file to config", err)
 		}
 		client := getClient(config)
-	
+
 		srv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
 		if err != nil {
-				log.Fatalf("Unable to retrieve Sheets client: %v", err)
+			fmt.Println("[!!] Error: Unable to retrieve Sheets client", err)
 		}
-	
+
 		spreadsheetId := "1929iNShf_p-H3QFgUq4xofSnvTLd62qGp8Csi_R9Rbc"
 		// readRange := "Sheet1!A2:D"
 		// resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 		// if err != nil {
 		// 		log.Fatalf("Unable to retrieve data from sheet: %v", err)
 		// }
-		
+
 		// if len(resp.Values) == 0 {
 		// 		fmt.Println("No data found.")
 		// } else {
@@ -205,28 +204,41 @@ func headers(w http.ResponseWriter, req *http.Request) {
 				},
 			},
 		}
-	
+
 		rbb := &sheets.BatchUpdateSpreadsheetRequest{
 			Requests: []*sheets.Request{&req},
 		}
-	
+
 		_, err = srv.Spreadsheets.BatchUpdate(spreadsheetId, rbb).Context(ctx).Do()
 		if err != nil {
 			fmt.Printf("Sheet with title {%s} already exists!\n", title)
 		}
 
+		writeRange := title + "!A1"
+		var vr sheets.ValueRange
+		myval := []interface{}{"Amount", "Ingredient", "Price", "Purchased"}
+		vr.Values = append(vr.Values, myval)
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, writeRange, &vr).ValueInputOption("RAW").Do()
+		if err != nil {
+			fmt.Println("[!!] Error: Unable to retrieve data from sheet", err)
+		}
+
 		matches := r.FindAllStringSubmatch(testing, -1)
 
-		for _, match := range matches {
+		for idx, match := range matches {
 			// original match, qty, ingredient, price
 			if len(match) != 4 {
 				fmt.Println(fmt.Errorf("[!] line not parsed correctly. {%s}", strings.Join(match, "")))
 			}
-			fmt.Printf("[qty: %s, ingredient: %s, price: %s]\n", match[1], match[2], match[3])
+
+			writeRange := title + "!A" + strconv.Itoa(idx+2)
+			var vr sheets.ValueRange
+			myval := []interface{}{match[1], match[2], match[3], ""}
+			vr.Values = append(vr.Values, myval)
+			_, err = srv.Spreadsheets.Values.Update(spreadsheetId, writeRange, &vr).ValueInputOption("RAW").Do()
+			if err != nil {
+				fmt.Println("[!!] Error: Unable to retrieve data from sheet", err)
+			}
 		}
-		fmt.Println()
-
-
-
 	}
 }
