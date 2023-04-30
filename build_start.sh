@@ -1,6 +1,3 @@
-if docker ps --format '{{.ID}}'; then
-    docker stop `docker ps --format '{{.ID}}'`
-fi
 docker buildx build -t go-recipe-service ./service/
 docker buildx build -t go-recipe-web ./web/
 
